@@ -13,24 +13,18 @@ else
 	exit 255
 fi
 
-# Android provides Vulkan, but no pkgconfig file, and -Dvk-proc-addr=enabled is
-# a hard requirement: without this, `dependency('vulkan')` resolves to NO and
-# meson fails with "Feature vk-proc-addr cannot be enabled".
-# scripts/mpv.sh writes the same file, but libplacebo is built *before* mpv
-# (dep_mpv=(ffmpeg libass lua libplacebo)), so it has to be created here too.
-# You can double-check the version in vulkan_core.h (-> VK_HEADER_VERSION).
-mkdir -p "$prefix_dir"/lib/pkgconfig
-cat >"$prefix_dir"/lib/pkgconfig/vulkan.pc <<"END"
-Name: Vulkan
-Description:
-Version: 1.3.275
-Libs: -lvulkan
-Cflags:
-END
+# Vulkan stays enabled here, unlike upstream mpv-android, which passes
+# -Dvulkan=disabled and therefore ships an OpenGL-only libmpv.
+# -Dvk-proc-addr=enabled is a hard requirement: without it the vulkan.pc
+# dependency resolves to NO and meson fails with "Feature vk-proc-addr cannot
+# be enabled". libplacebo is built *before* mpv
+# (dep_mpv=(ffmpeg libass lua libplacebo curl)), so it has to write vulkan.pc
+# itself rather than rely on scripts/mpv.sh.
+. ../../include/vulkan_pc.sh
 
 unset CC CXX
 meson setup $build --cross-file "$prefix_dir"/crossfile.txt \
-	-Dvk-proc-addr=enabled -Ddemos=false
+	-Dvulkan=enabled -Dvk-proc-addr=enabled -Ddemos=false
 
 ninja -C $build -j$cores
 DESTDIR="$prefix_dir" ninja -C $build install

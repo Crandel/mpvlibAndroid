@@ -13,22 +13,16 @@ else
 	exit 255
 fi
 
-# Android provides Vulkan, but no pkgconfig file
-# you can double-check the version in vulkan_core.h (-> VK_HEADER_VERSION)
-mkdir -p "$prefix_dir"/lib/pkgconfig
-cat >"$prefix_dir"/lib/pkgconfig/vulkan.pc <<"END"
-Name: Vulkan
-Description:
-Version: 1.3.275
-Libs: -lvulkan
-Cflags:
-END
+# Vulkan needs a pkg-config file that does not exist on Android; this fork
+# enables it (upstream does not) so gpu-context=androidvk keeps working.
+# Requires headers >= 1.4.309, which mpv 0.42.0 checks for.
+. ../../include/vulkan_pc.sh
 
 unset CC CXX # meson wants these unset
 
 meson setup $build --cross-file "$prefix_dir"/crossfile.txt \
 	--default-library shared \
-	-Diconv=disabled -Dlua=enabled -Dvulkan=enabled \
+	-Diconv=disabled -D{lua,libcurl}=enabled -Dvulkan=enabled \
 	-Dlibmpv=true -Dcplayer=false \
 	-Dmanpage-build=disabled
 

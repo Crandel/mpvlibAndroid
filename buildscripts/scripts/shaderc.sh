@@ -28,6 +28,11 @@ ndk-build -j$cores \
 	libshaderc_combined
 
 cd "$builddir"
+# Neither directory can be assumed to exist: shaderc is the first dependency for
+# a libplacebo-only build, and without mkdir the cp below would flatten
+# include/shaderc/* into $prefix_dir/include instead of keeping the subdirectory
+# that <shaderc/shaderc.h> needs.
+mkdir -p "$prefix_dir/lib" "$prefix_dir/include"
 cp -vr include/* "$prefix_dir/include"
 cp -v libs/*/$abi/libshaderc.a "$prefix_dir/lib/libshaderc_combined.a"
 
